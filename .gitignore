@@ -1,0 +1,30 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+.Python
+env/
+env.bak/
+.python-version
+
+# Spark
+*.log
+*.lck
+/tmp/
+*.metastore_db*
+*.hive*
+
+# Local files
+streaming_checkpoints/
+streaming_output/
+*.tmp
+*.temp
+
+# VS Code
+.vscode/
+
+# Mac
+.DS_Store

@@ -1,0 +1,7 @@
+Requirements · TXT
+kafka-python-ng==2.2.2
+pyspark==3.5.1
+pandas==2.2.3
+pyarrow==18.1.0
+setuptools<81
+ 
