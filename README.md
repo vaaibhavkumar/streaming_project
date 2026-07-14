@@ -47,19 +47,18 @@ and anomaly-flagged records land under `streaming_output/anomalies` as parquet.
 
 Stop everything with `Ctrl+C` in both terminals, then `docker compose down`.
 
-## Things worth tweaking to make it "yours" before an interview
+## Things worth tweaking to make it "yours"
 
 - Swap the synthetic producer for a **real public dataset** (e.g. replay a
-  Kaggle transactions CSV at intervals) — makes the story less "toy."
-- Add a **dead-letter sink** for malformed JSON (ties to the JD's "dead-letter
+  Kaggle transactions CSV at intervals)
+- Add a **dead-letter sink** for malformed JSON (akin to Industry ask of "dead-letter
   queue patterns" bullet).
 - Add a **unit test** for `detect_anomalies_per_account` using Spark's
-  testing utilities (ties to their "automated testing" ask).
-- Swap Kafka for **Azure Event Hub's Kafka-compatible endpoint** if you want
-  the exact tool named in the JD — the code barely changes (just the
-  bootstrap servers + SASL config).
+  testing utilities (ties to standard "automated testing" ask).
+- Swap Kafka for other similar tools like **Azure Event Hub's Kafka-compatible endpoint** if you want
+  — the code barely changes (just the bootstrap servers + SASL config).
 
-## Suggested resume bullet (only after you've actually run it and can defend it)
+## Possible resume bullet (only after you've actually run it and can defend it)
 
 > Built a real-time revenue anomaly-detection pipeline using Kafka and Spark
 > Structured Streaming, implementing watermarking for late data, tumbling-window
@@ -67,7 +66,4 @@ Stop everything with `Ctrl+C` in both terminals, then `docker compose down`.
 > transactions — closing hands-on gap between prior micro-batch Event Hub work
 > and true continuous stream processing.
 
-Keep it framed as a **personal/learning project**, distinct from your paid
-work experience — don't blend it into a client engagement bullet. Principal-level
-interviewers will ask "whose project was this" and honesty here matters more
-than the polish of the bullet.
+Note: This is a **personal/learning project**, I have done for learning. It is distinct from any paid work experience.
