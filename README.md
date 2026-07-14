@@ -67,3 +67,28 @@ Stop everything with `Ctrl+C` in both terminals, then `docker compose down`.
 > and true continuous stream processing.
 
 Note: This is a **personal/learning project**, I have done for learning.
+
+## Project Components
+
+- **Kafka broker:** Local message broker (started via `docker-compose.yml`) that hosts the topic `revenue_transactions` and forwards events from the producer to the streaming job.
+- **Producer (file):** `src/producer.py` — simulates and publishes transaction JSON events to Kafka (keys by `account_id`).
+- **Stream processor (file):** `src/streaming_job.py` — Spark Structured Streaming application that reads Kafka, computes windowed aggregates, and detects per-account anomalies using stateful processing.
+- **Checkpoint directory:** `streaming_checkpoints/` — stores Spark state for recovery; keep local and omit from version control.
+- **Output directory:** `streaming_output/` — Parquet files written by the job (windowed aggregates and anomaly alerts); keep local and omit from version control.
+- **Docs & tooling:** `README.md`, `issues_fixes_log.md`, and `.gitignore` for instructions, changelog, and ignored runtime artifacts.
+
+## What the producer does (`src/producer.py`)
+
+- **Generates synthetic transactions:** Creates JSON events containing `transaction_id`, `account_id`, `source_system`, `amount`, `currency`, and `event_time`.
+- **Injects realism:** Occasionally emits late-arriving events and anomalous amounts to exercise watermarking and detection logic.
+- **Publishes to Kafka:** Uses a Kafka producer to send messages to `revenue_transactions`, using `account_id` as the message key to help partitioning.
+- **Runtime behavior:** Runs continuously until stopped (Ctrl+C), producing a steady stream of test events for the Spark job to consume.
+
+## What the Spark job does (`src/streaming_job.py`)
+
+- **Consumes Kafka JSON events:** Reads the `revenue_transactions` topic, parses the payload, and converts `event_time` to a timestamp column.
+- **Windowed aggregations:** Computes 2-minute tumbling windows with a 3-minute watermark to tolerate late events, producing per-account/source rollups (total amount and transaction count).
+- **Stateful anomaly detection:** Maintains per-account running statistics via `applyInPandasWithState` and flags transactions that deviate significantly from the running mean; state is checkpointed for recovery.
+- **Sinks:** Writes live aggregates to the console for monitoring and persists results and anomaly alerts as Parquet files under `streaming_output/` (append mode).
+- **Checkpointing:** Each sink uses a checkpoint subfolder under `streaming_checkpoints/` — required for exactly-once semantics and stateful recovery.
+
