@@ -66,4 +66,4 @@ Stop everything with `Ctrl+C` in both terminals, then `docker compose down`.
 > transactions — closing hands-on gap between prior micro-batch Event Hub work
 > and true continuous stream processing.
 
-Note: This is a **personal/learning project**, I have done for learning. It is distinct from any paid work experience.
+Note: This is a **personal/learning project**, I have done for learning.
