@@ -32,6 +32,8 @@ ACCOUNTS = [f"ACC-{i:04d}" for i in range(1, 21)]
 
 def make_event(late: bool = False, anomalous: bool = False) -> dict:
     now = datetime.utcnow()
+    # Set the transaction time: if it's marked as "late", artificially delay it by 3 to 8 minutes 
+    # to test how the system handles lag; otherwise, use the exact current time.
     event_time = now - timedelta(minutes=random.randint(3, 8)) if late else now
 
     amount = round(random.uniform(10, 500), 2)
@@ -50,6 +52,8 @@ def make_event(late: bool = False, anomalous: bool = False) -> dict:
 
 
 def main():
+    # Set up the data sender (Kafka Producer) to package our transaction data 
+    # into a standard text format (JSON) so it can be securely and cleanly transmitted over the network.
     producer = KafkaProducer(
         bootstrap_servers=BOOTSTRAP_SERVERS,
         value_serializer=lambda v: json.dumps(v).encode("utf-8"),
@@ -59,6 +63,9 @@ def main():
     print(f"Producing to topic '{TOPIC}' on {BOOTSTRAP_SERVERS} — Ctrl+C to stop")
     try:
         while True:
+            # random.random() generates a random decimal number (a floating-point number) between 0.0 and 1.0.
+            # Specifically, the number it picks will be greater than or equal to 0.0, but strictly less than 1.0 
+            # (written mathematically as $[0.0, 1.0)$)
             late = random.random() < 0.10       # ~10% late-arriving events
             anomalous = random.random() < 0.05  # ~5% anomalous amounts
 
@@ -72,8 +79,12 @@ def main():
     except KeyboardInterrupt:
         print("Stopping producer.")
     finally:
-        producer.flush()
-        producer.close()
+        # To maximize speed, the Kafka producer doesn't immediately send every single transaction over the network 
+        # the exact millisecond it's created. Instead, it temporarily saves them in a tiny background memory buffer
+        producer.flush() # Empty the bucket completely.
+        # Keeping a connection open to a database or a Kafka broker consumes network resources (like memory and open sockets). 
+        # This line cleanly disconnects script from the Kafka broker, freeing up those resources so the system stays efficient.
+        producer.close() # Hang up the phone safely.
 
 
 if __name__ == "__main__":
