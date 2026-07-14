@@ -58,6 +58,7 @@ improvements discovered along the way.
 | 23 | `StateSchemaNotCompatible` on restart after schema change | Restored the original persisted state schema (`account_id`, `running_count`, `running_mean`) and added backward-compatible deserialization for both 2- and 3-field stored states |
 | 24 | `CHECKPOINT_ROOT` was pointed to `/tmp/...` so the checkpoint folder was not visible inside the project | Changed `CHECKPOINT_ROOT` to `streaming_checkpoints` so checkpoint folders are created inside the project workspace and are visible locally |
 | 25 | `BATCH_METADATA_NOT_FOUND` (`_spark_metadata/0` missing) caused the query to abort on write | Cleared stale output metadata under `streaming_output/windowed_aggregates/_spark_metadata` and deleted prior checkpoints under `streaming_checkpoints/*`; restart the job so Spark can rebuild fresh batch metadata. Stale output metadata from interrupted writes must not be reused |
+| 26 | Stale local checkpoint and Parquet output caused repeated restart failures even after `--force-fresh-start` was expected to clear state | Added stronger cleanup in `src/streaming_job.py`: `--force-fresh-start` now removes `streaming_checkpoints/<version>` and stale sink output directories; also added `--clear-output` and startup diagnostics to make recovery explicit |
 
 ## Final working environment
 

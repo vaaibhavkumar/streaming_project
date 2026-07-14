@@ -13,7 +13,9 @@ and **Kafka** — as opposed to the batch/micro-batch Event Hub work already on 
 2. `streaming_job.py` consumes the stream and does two things in parallel:
    - **Windowed aggregation with watermarking** — 2-minute tumbling windows of
      revenue per account/source system, tolerating 3 minutes of lateness
-     before finalizing a window (`console` sink for live visibility).
+     before finalizing a window. The live console sink is optional and
+     disabled by default in this repo, while durable Parquet output remains
+     the primary operational sink.
    - **True stateful processing** (`applyInPandasWithState`) — maintains a running
      mean per account *across the whole stream*, persisted via checkpointing, and
      flags any transaction that deviates sharply from that account's baseline
@@ -42,8 +44,11 @@ spark-submit \
   src/streaming_job.py
 ```
 
-You should see windowed aggregate rollups print to console every ~30 seconds,
-and anomaly-flagged records land under `streaming_output/anomalies` as parquet.
+By default, windowed aggregate rollups are written to Parquet files under
+`streaming_output/windowed_aggregates`, and anomaly-flagged records land under
+`streaming_output/anomalies` as Parquet. Enable live debug output locally with
+`--enable-console-debug` when running `spark-submit` if you want terminal
+visibility during development.
 
 Stop everything with `Ctrl+C` in both terminals, then `docker compose down`.
 
@@ -89,6 +94,6 @@ Note: This is a **personal/learning project**, I have done for learning.
 - **Consumes Kafka JSON events:** Reads the `revenue_transactions` topic, parses the payload, and converts `event_time` to a timestamp column.
 - **Windowed aggregations:** Computes 2-minute tumbling windows with a 3-minute watermark to tolerate late events, producing per-account/source rollups (total amount and transaction count).
 - **Stateful anomaly detection:** Maintains per-account running statistics via `applyInPandasWithState` and flags transactions that deviate significantly from the running mean; state is checkpointed for recovery.
-- **Sinks:** Writes live aggregates to the console for monitoring and persists results and anomaly alerts as Parquet files under `streaming_output/` (append mode).
+- **Sinks:** Persists windowed aggregates and anomaly alerts as Parquet files under `streaming_output/` (append mode). Live console output is optional and disabled by default; enable `ENABLE_CONSOLE_DEBUG` in `src/streaming_job.py` for local development visibility.
 - **Checkpointing:** Each sink uses a checkpoint subfolder under `streaming_checkpoints/` — required for exactly-once semantics and stateful recovery.
 

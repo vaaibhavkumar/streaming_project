@@ -27,7 +27,18 @@ TOPIC = "revenue_transactions"
 BOOTSTRAP_SERVERS = "localhost:9092"
 
 SOURCE_SYSTEMS = ["billing_sys", "gl_sys", "pos_sys", "subscriptions_sys"]
-ACCOUNTS = [f"ACC-{i:04d}" for i in range(1, 21)]
+ACCOUNTS = [f"ACC-{i:04d}" for i in range(1, 12)]
+
+# Beginner / non-technical primer:
+# - This script simulates a system that produces financial transactions and
+#   publishes them into Kafka under the `revenue_transactions` topic.
+# - Think of Kafka as a fast, durable message board. Producers post messages
+#   to a topic and consumers (like the Spark job) read them.
+#
+# Interview: Why use a separate producer when testing streaming applications?
+# - It lets you generate realistic, time-ordered events (including late or
+#   anomalous cases) so you can validate watermarking, windowing, and stateful
+#   logic before connecting a real production system.
 
 
 def make_event(late: bool = False, anomalous: bool = False) -> dict:
@@ -50,6 +61,11 @@ def make_event(late: bool = False, anomalous: bool = False) -> dict:
         "event_time": event_time.isoformat(),
     }
 
+# Interview: Why do we sometimes send 'late' events?
+# - Real-world networks and upstream systems can delay messages. Sending late
+#   events during testing ensures the consumer's watermarking and lateness
+#   handling logic are exercised.
+
 
 def main():
     # Set up the data sender (Kafka Producer) to package our transaction data 
@@ -59,6 +75,19 @@ def main():
         value_serializer=lambda v: json.dumps(v).encode("utf-8"),
         key_serializer=lambda k: k.encode("utf-8"),
     )
+
+    # Beginner notes on serializers and keys:
+    # - `value_serializer` converts the Python dict to a JSON bytes payload.
+    # - `key_serializer` converts the account id into bytes; Kafka uses keys to
+    #   determine partition placement. Messages with the same key are routed to
+    #   the same partition which preserves ordering for that key.
+    #
+    # Interview: What Kafka producer configs affect delivery semantics?
+    # - `acks`: controls how many brokers must acknowledge a write (0, 1, all).
+    # - `retries`: how many times to retry on transient failures.
+    # - `linger_ms` & `batch_size`: tune throughput vs latency by batching.
+    # For this simple test script we rely on default settings, but in production
+    # you'd tune these for your throughput and durability needs.
 
     print(f"Producing to topic '{TOPIC}' on {BOOTSTRAP_SERVERS} — Ctrl+C to stop")
     try:
@@ -70,6 +99,9 @@ def main():
             anomalous = random.random() < 0.05  # ~5% anomalous amounts
 
             event = make_event(late=late, anomalous=anomalous)
+            # Use account_id as the message key to help partitioning and
+            # co-locate events for the same account (useful for per-account
+            # stateful processing on the consumer side).
             producer.send(TOPIC, key=event["account_id"], value=event)
 
             tag = " (LATE)" if late else " (ANOMALY)" if anomalous else ""
@@ -85,6 +117,18 @@ def main():
         # Keeping a connection open to a database or a Kafka broker consumes network resources (like memory and open sockets). 
         # This line cleanly disconnects script from the Kafka broker, freeing up those resources so the system stays efficient.
         producer.close() # Hang up the phone safely.
+
+# Interview: Why call `flush()` and `close()`?
+# - `flush()` forces all buffered messages to be sent; without it, messages
+#   might still be in the client's memory buffer when the program exits.
+# - `close()` releases network resources and ensures a clean shutdown.
+#
+# Interview: What are delivery semantics a producer can choose?
+# - At-most-once: send and forget (low latency, possible data loss).
+# - At-least-once: retry on failures (possible duplicates, requires idempotence
+#   handling on the consumer or dedup keys).
+# - Exactly-once with Kafka Streams or transactional producers: complex but
+#   provides end-to-end guarantees when combined with transactional sinks.
 
 
 if __name__ == "__main__":
