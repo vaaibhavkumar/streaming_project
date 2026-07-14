@@ -19,7 +19,7 @@ and **Kafka** — as opposed to the batch/micro-batch Event Hub work already on 
      flags any transaction that deviates sharply from that account's baseline
      (`parquet` sink for anomaly alerts).
 
-This mirrors the JD's real-time use cases directly: reconciliation-style
+This mirrors typical real-time use cases directly: reconciliation-style
 rollups, anomaly-detection signals, and operational reporting built with
 watermarking, checkpointing, and stateful streaming.
 
